@@ -80,6 +80,15 @@ async function writeFileIfAbsent(filePath: string, data: Uint8Array | string) {
   }
 }
 
+/**
+ * The directory local storage writes to. An empty STORAGE_LOCAL_DIR counts
+ * as unset: resolving "" would give the working directory, and files would
+ * land in the app's own folder.
+ */
+export function resolveLocalStorageDir(env: EnvSource = process.env): string {
+  return env.STORAGE_LOCAL_DIR?.trim() || DEFAULT_LOCAL_STORAGE_DIR;
+}
+
 export function createLocalStorageService({
   env = process.env,
   rootDir,
@@ -93,9 +102,7 @@ export function createLocalStorageService({
   // The comment stops Turbopack from tracing the whole project into the
   // server bundle because of a path it cannot analyse.
   const resolvedRootDir = path.resolve(
-    /*turbopackIgnore: true*/ rootDir ??
-      env.STORAGE_LOCAL_DIR?.trim() ??
-      DEFAULT_LOCAL_STORAGE_DIR,
+    /*turbopackIgnore: true*/ rootDir ?? resolveLocalStorageDir(env),
   );
 
   function resolveObjectPath(key: string) {
