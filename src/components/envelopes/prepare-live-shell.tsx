@@ -451,6 +451,7 @@ function PrepareLiveShellContent({
     string | null
   >(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
+  const savesInFlightRef = useRef(0);
   const paperGridRef = useRef<HTMLDivElement | null>(null);
   const documentPanGestureRef = useRef<DocumentPanGesture | null>(null);
   const currentFieldsRef = useRef(fields);
@@ -614,6 +615,8 @@ function PrepareLiveShellContent({
 
     let payload: { data: ReplaceFieldsResponse | null; error: string | null };
 
+    savesInFlightRef.current += 1;
+
     try {
       const response = await fetch(`/api/envelopes/${envelopeId}/fields`, {
         body: JSON.stringify(buildFieldRequest(nextFields)),
@@ -633,6 +636,8 @@ function PrepareLiveShellContent({
         ok: false,
         redirectPath: null,
       };
+    } finally {
+      savesInFlightRef.current -= 1;
     }
 
     if (payload.error) {
@@ -674,6 +679,12 @@ function PrepareLiveShellContent({
     const nextSignature = serializeFieldRequest(fields);
 
     if (nextSignature === lastSavedSignatureRef.current) {
+      // An edit undone before its autosave ran leaves nothing to save, and
+      // the timer that would have cleared "Saving" was cancelled with it.
+      if (savesInFlightRef.current === 0) {
+        setSaveState((current) => (current === "saving" ? "saved" : current));
+      }
+
       return;
     }
 
