@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  formatReminderAvailableAt,
   formatReminderInterval,
   getAutomaticReminderDueAt,
   isAutomaticReminderDue,
@@ -48,4 +49,27 @@ test("an interval is named the way a person would say it", () => {
   assert.equal(formatReminderInterval(1), "Every day");
   assert.equal(formatReminderInterval(3), "Every 3 days");
   assert.equal(formatReminderInterval(7), "Every week");
+});
+
+test("the time another reminder may be sent is given in UTC, whatever the server's zone", () => {
+  const previousZone = process.env.TZ;
+
+  try {
+    for (const zone of ["UTC", "Europe/Berlin", "America/Los_Angeles"]) {
+      process.env.TZ = zone;
+
+      // 2027-01-15 08:00:00 UTC
+      assert.equal(
+        formatReminderAvailableAt(SENT),
+        "January 15 at 8:00 AM UTC",
+        zone,
+      );
+    }
+  } finally {
+    if (previousZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = previousZone;
+    }
+  }
 });
