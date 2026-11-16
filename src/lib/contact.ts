@@ -32,8 +32,12 @@ export class ContactSubmissionError extends Error {
   }
 }
 
-function formatSubmittedAt(date = new Date()): string {
-  return date.toISOString().replace("T", " ").replace(".000Z", " UTC");
+/** "2026-11-16 10:15:30 UTC" */
+export function formatSubmittedAt(date = new Date()): string {
+  return date
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d{3}Z$/, " UTC");
 }
 
 function isEmailServiceConfigurationError(error: unknown): boolean {
