@@ -89,7 +89,10 @@ export function FieldShell({
         {label}
       </FieldLabel>
       <Input
-        aria-describedby={name ? `${name}-description` : undefined}
+        // The description is only rendered with an error or helper text.
+        aria-describedby={
+          name && (error || helper) ? `${name}-description` : undefined
+        }
         aria-invalid={error ? true : undefined}
         autoComplete={autoComplete}
         className={cn(

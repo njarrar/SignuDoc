@@ -228,7 +228,9 @@ export function ContactForm() {
             Message
           </FieldLabel>
           <Textarea
-            aria-describedby="contact-message-description"
+            aria-describedby={
+              errors.message ? "contact-message-description" : undefined
+            }
             aria-invalid={errors.message ? true : undefined}
             className={errors.message ? "border-(--danger)" : ""}
             disabled={isSubmitting}
