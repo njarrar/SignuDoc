@@ -2134,6 +2134,7 @@ export async function sendDraftEnvelope(
           SET
             status = 'pending',
             signing_token_hash = NULL,
+            spent_token_hash = NULL,
             signing_token_expires_at = NULL,
             turn_started_at = NULL,
             last_notified_at = NULL,
@@ -2293,6 +2294,7 @@ export async function sendDraftEnvelope(
           SET
             status = 'pending',
             signing_token_hash = NULL,
+            spent_token_hash = NULL,
             signing_token_expires_at = NULL,
             turn_started_at = NULL,
             last_notified_at = NULL,
@@ -2685,6 +2687,7 @@ export async function voidSentEnvelope(
         `
           UPDATE signers
           SET
+            spent_token_hash = signing_token_hash,
             signing_token_hash = NULL,
             signing_token_expires_at = NULL,
             updated_at = $1

@@ -657,6 +657,48 @@ async function getSignerRowBySigningTokenHash(
   );
 }
 
+/**
+ * What to tell someone who opens a link that no longer works. A link that
+ * was used up by signing, declining or a void is remembered only by its
+ * hash (signers.spent_token_hash), and only to pick between these messages:
+ * it never opens the document or anything else.
+ */
+async function getSpentSigningLinkState(
+  tokenHash: string,
+  database: DbExecutor,
+): Promise<SigningUnavailableResponse["state"]> {
+  const spent = await queryOne<{
+    envelopeStatus: string;
+    signerStatus: string;
+  }>(
+    database,
+    `
+      SELECT
+        e.status AS "envelopeStatus",
+        s.status AS "signerStatus"
+      FROM signers s
+      JOIN envelopes e ON e.id = s.envelope_id
+      WHERE s.spent_token_hash = $1
+      LIMIT 1
+    `,
+    [tokenHash],
+  );
+
+  if (spent?.envelopeStatus === "voided") {
+    return "voided";
+  }
+
+  if (spent?.envelopeStatus === "declined") {
+    return "declined";
+  }
+
+  if (spent?.signerStatus === "signed") {
+    return "already-signed";
+  }
+
+  return "expired";
+}
+
 async function listFieldRows(
   envelopeId: string,
   database: DbExecutor,
@@ -1624,13 +1666,13 @@ async function resolveSigningContext(
     database?: DbExecutor;
   } = {},
 ): Promise<ResolvedSigningContext> {
-  const signerRow = await getSignerRowBySigningTokenHash(
-    hashOpaqueToken(token),
-    database,
-  );
+  const tokenHash = hashOpaqueToken(token);
+  const signerRow = await getSignerRowBySigningTokenHash(tokenHash, database);
 
   if (!signerRow) {
-    throw new SigningAccessError("expired");
+    throw new SigningAccessError(
+      await getSpentSigningLinkState(tokenHash, database),
+    );
   }
 
   const envelopeRow = await getEnvelopeRow(signerRow.envelopeId, database);
@@ -2426,6 +2468,7 @@ export async function submitSigningForToken(
             UPDATE signers
             SET
               status = 'signed',
+              spent_token_hash = signing_token_hash,
               signing_token_hash = NULL,
               signing_token_expires_at = NULL,
               signed_at = $1,
@@ -2661,6 +2704,7 @@ export async function submitSigningForToken(
             UPDATE signers
             SET
               status = 'signed',
+              spent_token_hash = signing_token_hash,
               signing_token_hash = NULL,
               signing_token_expires_at = NULL,
               signed_at = $1,
@@ -2994,6 +3038,7 @@ export async function declineSigningForToken(
           UPDATE signers
           SET
             status = 'declined',
+            spent_token_hash = signing_token_hash,
             signing_token_hash = NULL,
             signing_token_expires_at = NULL,
             declined_at = $1,
