@@ -18,7 +18,6 @@ import {
   useState,
   type Dispatch,
   type PointerEvent as ReactPointerEvent,
-  type MutableRefObject,
   type MouseEvent,
   type SetStateAction,
 } from "react";
@@ -241,7 +240,11 @@ function isSameChoice(field: PrepareField, other: PrepareField) {
   );
 }
 
-/** An id for a radio group, or for a button added to one. */
+/**
+ * An id for a new field, a radio group, or a button added to one.
+ * `crypto.randomUUID` exists only in secure contexts, so a site opened
+ * over plain HTTP on a host other than localhost needs the fallback.
+ */
 function newLocalId() {
   return typeof window !== "undefined" &&
     "crypto" in window &&
@@ -455,7 +458,6 @@ function PrepareLiveShellContent({
   const documentPanGestureRef = useRef<DocumentPanGesture | null>(null);
   const currentFieldsRef = useRef(fields);
   const lastSavedSignatureRef = useRef(serializeFieldRequest(initialFields));
-  const fieldCounterRef = useRef(initialFields.length);
   const persistFieldsRef = useRef<
     (nextFields: readonly PrepareField[]) => Promise<PersistFieldsResult>
   >(async () => ({
@@ -981,7 +983,6 @@ function PrepareLiveShellContent({
                             event,
                             activePage,
                             armedTool,
-                            fieldCounterRef,
                             selectedSignerId,
                             setArmedTool,
                             setFields,
@@ -1616,7 +1617,6 @@ function placeField(
   event: MouseEvent<HTMLButtonElement>,
   activePage: number,
   armedTool: PrepareFieldType,
-  fieldCounterRef: MutableRefObject<number>,
   selectedSignerId: string,
   setArmedTool: Dispatch<SetStateAction<PrepareFieldType | null>>,
   setFields: Dispatch<SetStateAction<PrepareField[]>>,
@@ -1633,16 +1633,12 @@ function placeField(
     viewportWidth: pageRect.width,
   });
 
-  fieldCounterRef.current += 1;
   const nextField: PrepareField = {
     ...nextRect,
     // A radio button starts a group of its own; more are added from the
     // inspector.
     groupId: tool.type === "radio" ? newLocalId() : undefined,
-    id:
-      typeof window !== "undefined" && "crypto" in window
-        ? window.crypto.randomUUID()
-        : `field-${fieldCounterRef.current}`,
+    id: newLocalId(),
     label: tool.type === "radio" ? "Option 1" : undefined,
     options: tool.type === "dropdown" ? [] : undefined,
     page: activePage,
