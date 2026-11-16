@@ -253,6 +253,8 @@ export function EnvelopeDetailShell({
       }
 
       setActionError(payload?.error ?? "Unable to send a reminder right now.");
+    } catch {
+      setActionError("Unable to send a reminder right now.");
     } finally {
       setIsSendingReminder(false);
     }
@@ -331,6 +333,8 @@ export function EnvelopeDetailShell({
       }
 
       window.location.assign(payload?.redirectPath ?? "/dashboard");
+    } catch {
+      setActionError("Unable to delete this draft.");
     } finally {
       setIsDeletingDraft(false);
     }
@@ -365,6 +369,8 @@ export function EnvelopeDetailShell({
       }
 
       setActionError(payload?.error ?? "Unable to void this envelope.");
+    } catch {
+      setActionError("Unable to void this envelope.");
     } finally {
       setIsVoidingEnvelope(false);
     }

@@ -932,6 +932,8 @@ export function SignersShell({
       window.location.assign(
         payload.data?.redirectPath ?? `/envelopes/${envelopeId}/prepare`,
       );
+    } catch {
+      setSubmissionError(genericSubmitError);
     } finally {
       setIsSubmitting(false);
     }
