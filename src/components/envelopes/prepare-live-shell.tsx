@@ -612,14 +612,28 @@ function PrepareLiveShellContent({
     setSaveError(null);
     setSaveState("saving");
 
-    const response = await fetch(`/api/envelopes/${envelopeId}/fields`, {
-      body: JSON.stringify(buildFieldRequest(nextFields)),
-      headers: {
-        "content-type": "application/json",
-      },
-      method: "PUT",
-    });
-    const payload = await parseJsonResponse<ReplaceFieldsResponse>(response);
+    let payload: { data: ReplaceFieldsResponse | null; error: string | null };
+
+    try {
+      const response = await fetch(`/api/envelopes/${envelopeId}/fields`, {
+        body: JSON.stringify(buildFieldRequest(nextFields)),
+        headers: {
+          "content-type": "application/json",
+        },
+        method: "PUT",
+      });
+
+      payload = await parseJsonResponse<ReplaceFieldsResponse>(response);
+    } catch {
+      // The request never reached the server. Without this the indicator
+      // stays on "Saving" and Retry, shown only for an error, never appears.
+      setSaveError("Unable to save your changes. Check your connection.");
+      setSaveState("error");
+      return {
+        ok: false,
+        redirectPath: null,
+      };
+    }
 
     if (payload.error) {
       setSaveError(payload.error);
